@@ -4,11 +4,5 @@
     "name": "admin",
     "password": "$2b$10$gis7m94g9OLDPCbipwSnI.6HQYtYB/l/Tq4ttuK3PX5lEeAsbpgpu",
     "createdAt": "2025-06-16T10:36:50.948Z"
-  },
-  {
-    "id": "9ff6eaa1-be2d-44ca-b69f-50d891c6eeff",
-    "name": "octo",
-    "password": "$2b$10$sLKC.LEe3U.YCEauq9ceJO6QJxdLimIjdTEb3AcgUCHtaDo68SpIq",
-    "createdAt": "2025-06-16T11:48:00.785Z"
   }
 ]

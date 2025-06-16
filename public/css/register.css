@@ -15,7 +15,7 @@ label {
 }
 
 input[type="text"], input[type="password"] {
-    width: 100%;
+    width: 70%;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -38,4 +38,9 @@ button {
 .success {
     color: green;
     margin-top: 10px;
+}
+
+a{
+    color: rgb(27, 69, 255);
+    font-size: 14px;
 }

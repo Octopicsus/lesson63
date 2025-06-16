@@ -130,11 +130,23 @@ app.get('/', (req, res) => {
     res.render('index');
 });
 
-app.post('/auth/login', passport.authenticate('local', {
-    successRedirect: '/protected',
-    failureRedirect: '/',
-    failureMessage: true
-}));
+app.post('/auth/login', (req, res, next) => {
+    passport.authenticate('local', (error, user, info) => {
+        if (error) {
+            return res.render('index', { error: 'Authentication error' });
+        }
+        if (!user) {
+            return res.render('index', { error: info.message || 'Invalid username or password' });
+        }
+        
+        req.logIn(user, (error) => {
+            if (error) {
+                return res.render('index', { error: 'Login failed' });
+            }
+            res.redirect('/protected');
+        });
+    })(req, res, next);
+});
 
 app.post('/auth/logout', (req, res) => {
     req.logout((error) => {

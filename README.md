@@ -1,6 +1,6 @@
 # Express Auth API
 
-Simple web application built with Express.js featuring user authentication and JWT tokens.
+Simple web application built with Express.js featuring user authentication.
 
 ## Usage
 
@@ -38,15 +38,20 @@ The application will be available at: http://localhost:3000
 ### Web Routes (HTML Pages)
 
 #### `GET /`
-- **Description:** Main login page
+- **Description:** Main login page with auto-logout for authenticated users
 - **Returns:** Login form (EJS template)
 - **Usage:** Navigate to homepage to see login interface
 
 #### `POST /`
 - **Description:** Process login form submission
 - **Body:** `{ name: string, password: string }`
-- **Returns:** Success page with user data or login page with error
+- **Returns:** Redirects to protected page or login page with error
 - **Usage:** Submit login credentials through web form
+
+#### `GET /protected`
+- **Description:** Protected user dashboard page
+- **Returns:** User information page (EJS template)
+- **Usage:** Accessible only for authenticated users, shows user details
 
 #### `GET /auth/register`
 - **Description:** Registration page
@@ -56,8 +61,13 @@ The application will be available at: http://localhost:3000
 #### `POST /auth/register`
 - **Description:** Process registration form submission
 - **Body:** `{ name: string, password: string }`
-- **Returns:** Redirects to login page or registration page with error
+- **Returns:** Redirects to homepage after successful registration
 - **Usage:** Submit new user registration through web form
+
+#### `POST /auth/logout`
+- **Description:** User logout
+- **Returns:** Redirects to homepage
+- **Usage:** Logout current user session
 
 ### API Routes (JSON Responses)
 
@@ -97,18 +107,26 @@ The application will be available at: http://localhost:3000
   - `200` - Valid token
   - `400` - Token required
   - `403` - Invalid token
-  - `404` - Token not found in database
 - **Usage:** Validate existing JWT token
 
 #### `GET /api/users`
 - **Description:** Get list of all users (protected route)
 - **Headers:** `Authorization: Bearer <token>`
-- **Returns:** Array of users with basic info
+- **Returns:** Array of users with basic info (id, name, createdAt)
 - **Status Codes:**
   - `200` - Success
   - `401` - No token provided
   - `403` - Invalid token
 - **Usage:** Retrieve user list for admin purposes
+
+#### `POST /api/logout`
+- **Description:** API logout endpoint
+- **Headers:** `Authorization: Bearer <token>`
+- **Returns:** `{ message: "Logged out successfully" }`
+- **Status Codes:**
+  - `200` - Success
+  - `401` - Authentication required
+- **Usage:** Logout via API call
 
 
 

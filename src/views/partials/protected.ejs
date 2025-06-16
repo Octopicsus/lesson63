@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protected Area</title>
+    <link rel="icon" href="/img/google.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/protected.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Protected Area</h2>
+        <div class="success">
+            <h3>Welcome, <%= user.name %>!</h3>
+            <div class="info-item">
+                <span class="info-label">User ID:</span>
+                <span class="info-value"><%= user.id %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Account Created:</span>
+                <span class="info-value"><%= new Date(user.createdAt).toLocaleString() %></span>
+            </div>
+        </div>
+        
+        <a href="/">Back to Home</a>
+    </div>
+</body>
+</html>

@@ -16,7 +16,7 @@ const app = express();
 const PORT = 3000;
 const JWT_SECRET = 'secret-key';
 const SALT_ROUNDS = 10;
-const TOKEN_EXPIRY = '60s'; 
+const TOKEN_EXPIRY = '24h'; 
 
 const usersFilePath = path.join(__dirname, '..', 'public', 'data', 'users.json');
 
@@ -29,21 +29,25 @@ async function saveUsers(users) {
     await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2));
 }
 
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+async function registerUser(name, password) {
+    const users = await readUsers();
+    const existingUser = users.find(user => user.name === name);
     
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
+    if (existingUser) {
+        throw new Error('User with this name already exists');
     }
     
-    jwt.verify(token, JWT_SECRET, (error, user) => {
-        if (error) {
-            return res.status(403).json({ error: 'Invalid token' });
-        }
-        req.user = user;
-        next();
-    });
+    const hashedPassword = await hashPassword(password);
+    const newUser = {
+        id: uuidv4(),
+        name,
+        password: hashedPassword,
+        createdAt: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    await saveUsers(users);
+    return newUser;
 }
 
 async function verifyPassword(plainPassword, hashedPassword) {
@@ -100,7 +104,7 @@ app.use(session({
     saveUninitialized: false,
     cookie: { 
         secure: false, 
-        maxAge: 60000 
+        maxAge: 24 * 60 * 60 * 1000 
     }
 }));
 
@@ -112,61 +116,29 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(passport.initialize());
 app.use(passport.session());
 
-function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.status(401).json({ error: 'Authentication required' });
-}
-
-function ensureAuthenticatedWeb(req, res, next) {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.redirect('/');
+function ensureAuthenticated(returnJson = false) {
+    return (req, res, next) => {
+        if (req.isAuthenticated()) {
+            return next();
+        }
+        
+        if (returnJson) {
+            return res.status(401).json({ error: 'Authentication required' });
+        } else {
+            return res.redirect('/');
+        }
+    };
 }
 
 app.get('/', (req, res) => {
-    // Если пользователь авторизован, сначала делаем logout
-    if (req.isAuthenticated()) {
-        req.logout((err) => {
-            if (err) {
-                console.error('Logout error:', err);
-            }
-            req.session.destroy(() => {
-                res.render('index');
-            });
-        });
-    } else {
-        res.render('index');
-    }
+    res.render('index');
 });
-
-app.post('/', async (req, res) => {
-    const { name, password } = req.body;
-    
-    const users = await readUsers();
-    const user = users.find(user => user.name === name);
-    
-    if (!user || !(await verifyPassword(password, user.password))) {
-        return res.render('index', { error: 'Invalid name or password' });
-    }
-    
-    req.login(user, (err) => {
-        if (err) {
-            return res.render('index', { error: 'Login failed' });
-        }
-        res.redirect('/protected');
-    });
-});
-
 
 app.post('/auth/login', passport.authenticate('local', {
+    successRedirect: '/protected',
     failureRedirect: '/',
     failureMessage: true
-}), (req, res) => {
-    res.redirect('/protected');
-});
+}));
 
 app.post('/auth/logout', (req, res) => {
     req.logout((err) => {
@@ -185,31 +157,19 @@ app.get('/auth/register', (req, res) => {
 
 app.post('/auth/register', async (req, res) => {
     const { name, password } = req.body;
-    const users = await readUsers();
     
-    const existingUserByName = users.find(user => user.name === name);
-    
-    if (existingUserByName) {
-        return res.render('partials/register', { error: 'User with this name already exists' });
+    try {
+        const newUser = await registerUser(name, password);
+        
+        req.login(newUser, (err) => {
+            if (err) {
+                return res.render('partials/register', { error: 'Registration successful but login failed' });
+            }
+            res.redirect('/');
+        });
+    } catch (error) {
+        res.render('partials/register', { error: error.message });
     }
-    
-    const hashedPassword = await hashPassword(password);
-    const newUser = {
-        id: uuidv4(),
-        name,
-        password: hashedPassword,
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    await saveUsers(users);
-    
-    req.login(newUser, (err) => {
-        if (err) {
-            return res.render('partials/register', { error: 'Registration successful but login failed' });
-        }
-        res.redirect('/');
-    });
 });
 
 app.post('/api/login', (req, res, next) => {
@@ -238,40 +198,28 @@ app.post('/api/login', (req, res, next) => {
 
 app.post('/api/register', async (req, res) => {
     const { name, password } = req.body;
-    const users = await readUsers();
     
-    const existingUserByName = users.find(u => u.name === name);
-
-    if (existingUserByName) {
-        return res.status(400).json({ error: 'User with this name already exists' });
-    }
-    
-    const hashedPassword = await hashPassword(password);
-    const newUser = {
-        id: uuidv4(),
-        name,
-        password: hashedPassword,
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    await saveUsers(users);
-    
-    req.logIn(newUser, (err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Registration successful but login failed' });
-        }
+    try {
+        const newUser = await registerUser(name, password);
         
-        const token = jwt.sign({ id: newUser.id, name: newUser.name }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
-        res.json({ 
-            token, 
-            user: { id: newUser.id, name: newUser.name }, 
-            expiresIn: TOKEN_EXPIRY 
+        req.logIn(newUser, (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Registration successful but login failed' });
+            }
+            
+            const token = jwt.sign({ id: newUser.id, name: newUser.name }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
+            res.json({ 
+                token, 
+                user: { id: newUser.id, name: newUser.name }, 
+                expiresIn: TOKEN_EXPIRY 
+            });
         });
-    });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 });
 
-app.post('/api/logout', ensureAuthenticated, (req, res) => {
+app.post('/api/logout', ensureAuthenticated(true), (req, res) => {
     req.logout((err) => {
         if (err) {
             return res.status(500).json({ error: 'Logout failed' });
@@ -282,11 +230,11 @@ app.post('/api/logout', ensureAuthenticated, (req, res) => {
     });
 });
 
-app.get('/protected', ensureAuthenticatedWeb, (req, res) => {
+app.get('/protected', ensureAuthenticated(), (req, res) => {
     res.render('partials/protected', { user: req.user });
 });
 
-app.get('/api/protected', ensureAuthenticated, (req, res) => {
+app.get('/api/protected', ensureAuthenticated(true), (req, res) => {
     res.json({ message: 'This is protected data', user: req.user });
 });
 
@@ -308,7 +256,7 @@ app.post('/api/verify-token', async (req, res) => {
     }
 });
 
-app.get('/api/users', ensureAuthenticated, async (req, res) => {
+app.get('/api/users', ensureAuthenticated(true), async (req, res) => {
     const users = await readUsers();
     const usersData = users.map(user => ({
         id: user.id,

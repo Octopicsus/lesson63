@@ -38,14 +38,14 @@ The application will be available at: http://localhost:3000
 ### Web Routes (HTML Pages)
 
 #### `GET /`
-- **Description:** Main login page with auto-logout for authenticated users
+- **Description:** Main login page
 - **Returns:** Login form (EJS template)
 - **Usage:** Navigate to homepage to see login interface
 
-#### `POST /`
-- **Description:** Process login form submission
-- **Body:** `{ name: string, password: string }`
-- **Returns:** Redirects to protected page or login page with error
+#### `POST /auth/login`
+- **Description:** Process login form submission using Passport Local Strategy
+- **Body:** `{ username: string, password: string }`
+- **Returns:** Redirects to protected page on success or login page with error
 - **Usage:** Submit login credentials through web form
 
 #### `GET /protected`

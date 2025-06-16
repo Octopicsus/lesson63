@@ -88,7 +88,7 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
     try {
         const users = await readUsers();
-        const user = users.find(u => u.id === id);
+        const user = users.find(user => user.id === id);
         done(null, user);
     } catch (error) {
         done(error);
@@ -141,8 +141,8 @@ app.post('/auth/login', passport.authenticate('local', {
 }));
 
 app.post('/auth/logout', (req, res) => {
-    req.logout((err) => {
-        if (err) {
+    req.logout((error) => {
+        if (error) {
             return res.status(500).json({ error: 'Logout failed' });
         }
         req.session.destroy(() => {
@@ -161,8 +161,8 @@ app.post('/auth/register', async (req, res) => {
     try {
         const newUser = await registerUser(name, password);
         
-        req.login(newUser, (err) => {
-            if (err) {
+        req.login(newUser, (error) => {
+            if (error) {
                 return res.render('partials/register', { error: 'Registration successful but login failed' });
             }
             res.redirect('/');
@@ -173,8 +173,8 @@ app.post('/auth/register', async (req, res) => {
 });
 
 app.post('/api/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
-        if (err) {
+    passport.authenticate('local', (error, user, info) => {
+        if (error) {
             return res.status(500).json({ error: 'Authentication error' });
         }
         if (!user) {
@@ -202,8 +202,8 @@ app.post('/api/register', async (req, res) => {
     try {
         const newUser = await registerUser(name, password);
         
-        req.logIn(newUser, (err) => {
-            if (err) {
+        req.logIn(newUser, (error) => {
+            if (error) {
                 return res.status(500).json({ error: 'Registration successful but login failed' });
             }
             
@@ -220,8 +220,8 @@ app.post('/api/register', async (req, res) => {
 });
 
 app.post('/api/logout', ensureAuthenticated(true), (req, res) => {
-    req.logout((err) => {
-        if (err) {
+    req.logout((error) => {
+        if (error) {
             return res.status(500).json({ error: 'Logout failed' });
         }
         req.session.destroy(() => {

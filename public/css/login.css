@@ -34,3 +34,8 @@ button {
     color: red;
     margin-top: 10px;
 }
+
+a{
+    color: rgb(27, 69, 255);
+    font-size: 14px;
+}
